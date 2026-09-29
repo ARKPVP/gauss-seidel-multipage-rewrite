@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gauss–Seidel Calculator — วิธีทำ</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><div class="container"><h1>Gauss–Seidel Method</h1><p>แสดงการแทนค่าจริงทีละตัวแปรในแต่ละ iteration</p></div></header>
+<nav><div class="container nav-inner">
+  <a href="index.html">1. บทนำ</a><a href="input.html">2. กรอกสมการ</a><a href="settings.html">3. ตั้งค่า</a><a href="formulas.html">4. สูตรและที่มา</a><a href="steps.html">5. วิธีทำ</a><a href="results.html">6. ผลลัพธ์</a>
+</div></nav>
+<main class="container">
+  <div class="person-tag">ส่วนที่ 5 · Iteration</div>
+  <section class="card">
+    <h2>วิธีทำทีละรอบ</h2>
+    <div id="summary"></div>
+    <div id="iterNav" class="iter-nav" hidden>
+      <button class="ghost" id="prevBtn" type="button">← รอบก่อน</button>
+      <label>Iteration
+        <input id="iterInput" type="number" min="1" step="1" style="width:120px">
+      </label>
+      <span id="iterCount" class="muted"></span>
+      <button class="ghost" id="nextBtn" type="button">รอบถัดไป →</button>
+    </div>
+    <div id="stepsOutput"></div>
+    <div id="message"></div>
+    <div class="actions"><a class="btn ghost" href="formulas.html">← ย้อนกลับ</a><div class="right"><a class="btn primary" href="results.html">ดูตารางผลลัพธ์ →</a></div></div>
+  </section>
+</main>
+<footer><div class="container">ค่าที่มีป้าย “รอบนี้” คือหัวใจของ Gauss–Seidel</div></footer>
+<script src="gauss-seidel.js"></script><script src="app.js"></script>
+<script>
+(() => {
+  const summary = document.getElementById('summary');
+  const nav = document.getElementById('iterNav');
+  const input = document.getElementById('iterInput');
+  const count = document.getElementById('iterCount');
+  const out = document.getElementById('stepsOutput');
+  const message = document.getElementById('message');
+  let result;
+
+  function symbolicNumerator(line, iteration) {
+    let html = fmt(line.rhs);
+    for (const term of line.terms) {
+      html += signedTermHTML(-term.coefficient, xVar(term.j + 1, term.sourceIteration), false);
+    }
+    return html;
+  }
+
+  function substitutedNumerator(line) {
+    let html = fmt(line.rhs);
+    for (const term of line.terms) {
+      const moved = -term.coefficient;
+      const abs = Math.abs(moved);
+      const coeff = abs === 1 ? '' : fmt(abs);
+      html += `${moved < 0 ? ' − ' : ' + '}${coeff}(${fmt(term.valueUsed)})`;
+    }
+    return html;
+  }
+
+  function renderIteration(k) {
+    if (!result?.detailedSteps?.length) return;
+    k = Math.max(1, Math.min(result.detailedSteps.length, Number(k) || 1));
+    input.value = k;
+    const step = result.detailedSteps[k - 1];
+    let html = `<div class="iteration-card"><h3>Iteration ${step.iteration}</h3>`;
+    for (const line of step.lines) {
+      const used = line.terms.length
+        ? line.terms.map(t => `${xVar(t.j + 1, t.sourceIteration)} = ${fmt(t.valueUsed)} <span class="muted">(${t.sourceIteration === step.iteration ? 'ค่าใหม่รอบนี้' : 'ค่ารอบก่อน'})</span>`).join(' , ')
+        : 'ไม่มีตัวแปรอื่น';
+      html += `
+        <div class="source-box"><strong>คำนวณ ${xVar(line.i + 1, step.iteration)}</strong><br>ค่าที่นำมาแทน: ${used}</div>
+        <div class="eq-line math math-center">
+          ${xVar(line.i + 1, step.iteration)} = ${fracHTML(symbolicNumerator(line, step.iteration), fmt(line.diagonal))}
+        </div>
+        <div class="eq-line math math-center">
+          ${xVar(line.i + 1, step.iteration)} = ${fracHTML(substitutedNumerator(line), fmt(line.diagonal))}
+        </div>
+        <div class="eq-line math math-center">
+          ${xVar(line.i + 1, step.iteration)} = ${fracHTML(fmt(line.numerator), fmt(line.diagonal))} = <strong>${fmt(line.newValue)}</strong>
+        </div>`;
+    }
+    html += `
+      <div class="kpi-grid">
+        <div class="kpi"><div class="label">Stopping error (${escapeHtml(criterionLabel(result.prepared.criterion))})</div><div class="value">${fmt(step.error)}</div></div>
+        <div class="kpi"><div class="label">Residual ||b − Ax||∞</div><div class="value">${fmt(step.residual)}</div></div>
+      </div>
+      <p class="small muted">Tolerance = ${fmt(result.prepared.tolerance)} · เงื่อนไขหยุดตรวจหลังคำนวณครบทุกตัวแปรของรอบนั้น</p>
+    </div>`;
+    out.innerHTML = html;
+    document.getElementById('prevBtn').disabled = k <= 1;
+    document.getElementById('nextBtn').disabled = k >= result.detailedSteps.length;
+  }
+
+  try {
+    result = GS.gaussSeidel(getState());
+    summary.innerHTML = rowOrderMessage(result.prepared) + `
+      <div class="kpi-grid">
+        <div class="kpi"><div class="label">จำนวนรอบที่คำนวณ</div><div class="value">${result.history.length}</div></div>
+        <div class="kpi"><div class="label">สถานะ</div><div class="value">${result.converged ? 'ลู่เข้าตามเกณฑ์' : 'ยังไม่ลู่เข้าตามเกณฑ์'}</div></div>
+        <div class="kpi"><div class="label">เกณฑ์หยุด</div><div class="value small">${escapeHtml(criterionLabel(result.prepared.criterion))}</div></div>
+      </div>`;
+    if (result.detailedSteps.length) {
+      nav.hidden = false;
+      input.max = result.detailedSteps.length;
+      count.textContent = `/ ${result.detailedSteps.length}`;
+      renderIteration(1);
+    }
+  } catch (err) {
+    showMessage(message, err.message, 'danger');
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', () => renderIteration(Number(input.value) - 1));
+  document.getElementById('nextBtn').addEventListener('click', () => renderIteration(Number(input.value) + 1));
+  input.addEventListener('change', () => renderIteration(input.value));
+})();
+</script>
+</body></html>
