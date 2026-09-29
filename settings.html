@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gauss–Seidel Calculator — ตั้งค่า</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><div class="container"><h1>Gauss–Seidel Method</h1><p>กำหนดค่าเริ่มต้น เกณฑ์หยุด และจำนวนรอบสูงสุด</p></div></header>
+<nav><div class="container nav-inner">
+  <a href="index.html">1. บทนำ</a><a href="input.html">2. กรอกสมการ</a><a href="settings.html">3. ตั้งค่า</a><a href="formulas.html">4. สูตรและที่มา</a><a href="steps.html">5. วิธีทำ</a><a href="results.html">6. ผลลัพธ์</a>
+</div></nav>
+<main class="container">
+  <div class="person-tag">ส่วนที่ 3 · ตั้งค่าการคำนวณ</div>
+  <section class="card">
+    <h2>ค่าเริ่มต้นและเกณฑ์หยุด</h2>
+    <div id="systemMessage"></div>
+    <div class="grid">
+      <div><label>Initial guess x⁽⁰⁾</label><div id="initialGuess" class="guess-row"></div></div>
+      <label>Tolerance ε<input id="tolerance" type="number" step="any" min="0" inputmode="decimal"></label>
+      <label>Max Iterations<input id="maxIterations" type="number" min="1" max="10000" step="1"></label>
+      <label>Stopping criterion
+        <select id="criterion">
+          <option value="textbook-last-relative">ตามเอกสาร: Relative error ของ xₙ</option>
+          <option value="max-relative">Max relative update ทุกตัวแปร</option>
+          <option value="max-absolute">Max absolute update ทุกตัวแปร</option>
+        </select>
+      </label>
+      <label>การสลับแถวเมื่อ diagonal เป็นศูนย์
+        <select id="autoReorder"><option value="true">อนุญาตให้สลับทั้งแถวอัตโนมัติ</option><option value="false">ไม่สลับอัตโนมัติ</option></select>
+      </label>
+    </div>
+    <div class="message info"><strong>โหมดตามเอกสาร</strong> ใช้ ε<sub>con</sub> = |(xₙ⁽ᵏ⁾ − xₙ⁽ᵏ⁻¹⁾)/xₙ⁽ᵏ⁾| ตามตัวอย่าง 3.6 ส่วน residual ||b−Ax||∞ จะแสดงเป็นค่าตรวจสอบแยกต่างหาก</div>
+    <div id="diagnostics"></div>
+    <div id="message"></div>
+    <div class="actions"><a class="btn ghost" href="input.html">← ย้อนกลับ</a><div class="right"><button class="primary" id="saveNext" type="button">ตรวจสอบและไปต่อ →</button></div></div>
+  </section>
+</main>
+<footer><div class="container">ค่า Max Iterations เป็นเพียง guardrail ของโปรแกรม ไม่ใช่ข้อมูลจากโจทย์</div></footer>
+<script src="gauss-seidel.js"></script><script src="app.js"></script>
+<script>
+(() => {
+  let state = getState();
+  const guess = document.getElementById('initialGuess');
+  const diagnostics = document.getElementById('diagnostics');
+  const systemMessage = document.getElementById('systemMessage');
+  const message = document.getElementById('message');
+
+  try {
+    GS.validateShapeAndNumbers(state);
+  } catch (err) {
+    showMessage(systemMessage, `ข้อมูลสมการยังไม่พร้อม: ${err.message}`, 'danger');
+  }
+
+  for (let i = 0; i < state.n; i++) {
+    const label = document.createElement('label'); label.className = 'guess-item';
+    label.innerHTML = `x${i + 1}⁽⁰⁾<input id="x0-${i}" type="number" step="any" inputmode="decimal" value="${Number.isFinite(state.x0?.[i]) ? state.x0[i] : 0}">`;
+    guess.appendChild(label);
+  }
+  document.getElementById('tolerance').value = state.tolerance;
+  document.getElementById('maxIterations').value = state.maxIterations;
+  document.getElementById('criterion').value = state.criterion;
+  document.getElementById('autoReorder').value = String(state.autoReorder !== false);
+
+  function preview() {
+    try {
+      const temp = {
+        ...state,
+        x0: Array.from({length: state.n}, (_, i) => parseNumericInput(document.getElementById(`x0-${i}`), `x${i + 1}⁽⁰⁾`)),
+        tolerance: parseNumericInput(document.getElementById('tolerance'), 'Tolerance'),
+        maxIterations: Number(document.getElementById('maxIterations').value),
+        criterion: document.getElementById('criterion').value,
+        autoReorder: document.getElementById('autoReorder').value === 'true'
+      };
+      const prepared = GS.prepareSystem(temp);
+      diagnostics.innerHTML = rowOrderMessage(prepared) + diagnosticHTML(prepared);
+      return temp;
+    } catch (err) {
+      showMessage(diagnostics, err.message, 'warning');
+      return null;
+    }
+  }
+
+  ['tolerance','maxIterations','criterion','autoReorder'].forEach(id => document.getElementById(id).addEventListener('change', preview));
+  guess.addEventListener('change', preview);
+  preview();
+
+  document.getElementById('saveNext').addEventListener('click', () => {
+    try {
+      const next = {
+        ...state,
+        x0: Array.from({length: state.n}, (_, i) => parseNumericInput(document.getElementById(`x0-${i}`), `x${i + 1}⁽⁰⁾`)),
+        tolerance: parseNumericInput(document.getElementById('tolerance'), 'Tolerance'),
+        maxIterations: Number(document.getElementById('maxIterations').value),
+        criterion: document.getElementById('criterion').value,
+        autoReorder: document.getElementById('autoReorder').value === 'true'
+      };
+      GS.validateShapeAndNumbers(next);
+      GS.prepareSystem(next);
+      saveState(next);
+      location.href = 'formulas.html';
+    } catch (err) {
+      showMessage(message, err.message, 'danger');
+    }
+  });
+})();
+</script>
+</body></html>
