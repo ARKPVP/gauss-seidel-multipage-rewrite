@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gauss–Seidel Calculator — บทนำ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><div class="container"><h1>Gauss–Seidel Method</h1><p>เครื่องมือคำนวณระบบสมการเชิงเส้นแบบทำซ้ำ พร้อมแสดงที่มาทุกขั้น</p></div></header>
+<nav><div class="container nav-inner">
+  <a href="index.html">1. บทนำ</a><a href="input.html">2. กรอกสมการ</a><a href="settings.html">3. ตั้งค่า</a><a href="formulas.html">4. สูตรและที่มา</a><a href="steps.html">5. วิธีทำ</a><a href="results.html">6. ผลลัพธ์</a>
+</div></nav>
+<main class="container">
+  <div class="person-tag">ส่วนที่ 1 · หลักการ</div>
+  <section class="card">
+    <h2>Gauss–Seidel ใช้ค่าใหม่ทันทีในรอบเดียวกัน</h2>
+    <p>เว็บไซต์เวอร์ชันนี้เขียนใหม่โดยยึดหลักจากหัวข้อ <strong>3.6 ระเบียบวิธีการทำซ้ำของเกาส์–ไซเดล</strong> ในเอกสารที่แนบมา: เมื่อคำนวณ <i>x</i><sub>1</sub><sup>(k+1)</sup> ได้แล้ว ค่านั้นจะถูกนำไปใช้คำนวณตัวแปรถัดไปในรอบเดียวกันทันที ไม่ใช่รอให้จบรอบแบบ Jacobi</p>
+    <div class="formula math math-center">
+      <i>x</i><sub>i</sub><sup>(k+1)</sup> =
+      <span class="frac"><span class="num">
+        <i>b</i><sub>i</sub>
+        − Σ<sub>j&lt;i</sub><i>a</i><sub>ij</sub><i>x</i><sub>j</sub><sup>(k+1)</sup>
+        − Σ<sub>j&gt;i</sub><i>a</i><sub>ij</sub><i>x</i><sub>j</sub><sup>(k)</sup>
+      </span><span class="den"><i>a</i><sub>ii</sub></span></span>
+    </div>
+    <p>ตัวอย่างที่มากับโปรแกรมคือ <strong>ตัวอย่าง 3.6 จากเอกสาร</strong> เท่านั้น ไม่มีการสุ่มหรือสร้างค่าตัวเลขตัวอย่างขึ้นเอง ผู้ใช้สามารถแทนระบบสมการของตนเองได้ และโปรแกรมจะตรวจข้อมูลว่าง, ค่าที่ไม่ใช่ตัวเลข, ระบบที่ไม่มีคำตอบเอกลักษณ์ และปัญหาแนวทแยงเป็นศูนย์ก่อนคำนวณ</p>
+    <div class="message info">Diagonal dominance และ Sassenfeld criterion เป็นตัวช่วยวิเคราะห์การลู่เข้า ไม่ใช่เงื่อนไขจำเป็นทุกกรณี หากเกณฑ์ไม่ผ่าน โปรแกรมยังคำนวณได้แต่จะแจ้งเตือนและแสดง residual ให้ตรวจสอบ</div>
+    <div class="actions"><span></span><div class="right"><a class="btn primary" href="input.html">เริ่มกรอกระบบสมการ →</a></div></div>
+  </section>
+
+  <section class="card">
+    <h2>สิ่งที่แก้จากโค้ดเดิม</h2>
+    <p>แกนคำนวณถูกแยกเป็นโมดูลเดียวเพื่อลดความเสี่ยงที่หน้า “วิธีทำ” กับหน้า “ผลลัพธ์” ใช้สูตรคนละชุด เพิ่ม validation แบบไม่ตีความช่องว่างเป็นศูนย์, เพิ่มการตรวจ residual, เพิ่มเกณฑ์หยุดแบบตามเอกสารและแบบใช้งานทั่วไป, และเพิ่ม automated tests สำหรับตัวอย่าง 3.6</p>
+  </section>
+</main>
+<footer><div class="container">Gauss–Seidel Calculator · ไม่มีการสุ่มข้อมูล</div></footer>
+<script src="gauss-seidel.js"></script><script src="app.js"></script>
+</body>
+</html>
