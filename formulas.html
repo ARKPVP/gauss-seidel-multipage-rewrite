@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gauss–Seidel Calculator — สูตรและที่มา</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><div class="container"><h1>Gauss–Seidel Method</h1><p>จัดรูปสมการและแสดงที่มาของสัมประสิทธิ์ทุกตัว</p></div></header>
+<nav><div class="container nav-inner">
+  <a href="index.html">1. บทนำ</a><a href="input.html">2. กรอกสมการ</a><a href="settings.html">3. ตั้งค่า</a><a href="formulas.html">4. สูตรและที่มา</a><a href="steps.html">5. วิธีทำ</a><a href="results.html">6. ผลลัพธ์</a>
+</div></nav>
+<main class="container">
+  <div class="person-tag">ส่วนที่ 4 · สูตรและการจัดรูป</div>
+  <section class="card">
+    <h2>สูตร Gauss–Seidel ที่โปรแกรมใช้จริง</h2>
+    <div class="formula math math-center">
+      <i>x</i><sub>i</sub><sup>(k+1)</sup> =
+      <span class="frac"><span class="num">
+        <i>b</i><sub>i</sub>
+        − Σ<sub>j&lt;i</sub><i>a</i><sub>ij</sub><i>x</i><sub>j</sub><sup>(k+1)</sup>
+        − Σ<sub>j&gt;i</sub><i>a</i><sub>ij</sub><i>x</i><sub>j</sub><sup>(k)</sup>
+      </span><span class="den"><i>a</i><sub>ii</sub></span></span>
+    </div>
+    <p class="muted">ตัวแปรที่คำนวณไปแล้วในรอบเดียวกันใช้ค่าใหม่ (k+1) ส่วนตัวแปรที่ยังไม่ถึงคิวใช้ค่าจากรอบก่อน (k)</p>
+    <div id="formulaOutput"></div>
+    <div id="message"></div>
+    <div class="actions"><a class="btn ghost" href="settings.html">← ย้อนกลับ</a><div class="right"><a class="btn primary" href="steps.html">ดูการแทนค่าทีละรอบ →</a></div></div>
+  </section>
+</main>
+<footer><div class="container">สมการถูกสลับเฉพาะ “ทั้งแถว” เมื่อจำเป็น และไม่สลับตัวแปร</div></footer>
+<script src="gauss-seidel.js"></script><script src="app.js"></script>
+<script>
+(() => {
+  const out = document.getElementById('formulaOutput');
+  const message = document.getElementById('message');
+  try {
+    const raw = getState();
+    const s = GS.prepareSystem(raw);
+    out.innerHTML = rowOrderMessage(s) + diagnosticHTML(s);
+
+    for (let i = 0; i < s.n; i++) {
+      const originalRow = s.rowOrder[i];
+      const card = document.createElement('div'); card.className = 'origin-card';
+      let items = `<li><strong>${fmt(s.b[i])}</strong> คือค่าด้านขวา b ของสมการต้นฉบับแถวที่ ${originalRow + 1}</li>`;
+      items += `<li><strong>${fmt(s.A[i][i])}</strong> คือสัมประสิทธิ์ของ ${xVar(i + 1)} และต้องไม่เป็นศูนย์ เพราะเป็นตัวหาร</li>`;
+      for (let j = 0; j < s.n; j++) {
+        if (j === i || s.A[i][j] === 0) continue;
+        const a = s.A[i][j];
+        items += `<li>${signedTermHTML(a, xVar(j + 1), true)} อยู่ฝั่งซ้าย จึงกลายเป็น ${signedTermHTML(-a, xVar(j + 1), true)} ในตัวเศษเมื่อย้ายข้าง</li>`;
+      }
+      card.innerHTML = `
+        <h3>สมการคำนวณ ${xVar(i + 1)} <span class="muted small">(มาจากสมการต้นฉบับแถว ${originalRow + 1})</span></h3>
+        <div class="source-box">สมการหลังจัดลำดับแถว</div>
+        <div class="formula math math-center">${originalEquationHTML(s.A, s.b, i)}</div>
+        <div class="source-box">จัดรูปเพื่อหา ${xVar(i + 1)}</div>
+        <div class="formula math math-center">${rearrangedEquationHTML(s.A, s.b, i)}</div>
+        <ul class="origin-list">${items}</ul>`;
+      out.appendChild(card);
+    }
+  } catch (err) {
+    showMessage(message, err.message, 'danger');
+    out.innerHTML = '';
+  }
+})();
+</script>
+</body></html>
