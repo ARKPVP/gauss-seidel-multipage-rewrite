@@ -1,0 +1,86 @@
+
+> gauss-seidel-multipage-rewrite@2.0.0 test
+> node --test tests/*.test.js
+
+TAP version 13
+# Subtest: Example 3.6 is sourced and row-reordered as the textbook calculation
+ok 1 - Example 3.6 is sourced and row-reordered as the textbook calculation
+  ---
+  duration_ms: 3.416669
+  type: 'test'
+  ...
+# Subtest: Example 3.6 first iteration matches the document
+ok 2 - Example 3.6 first iteration matches the document
+  ---
+  duration_ms: 3.1919
+  type: 'test'
+  ...
+# Subtest: Example 3.6 second iteration matches the document
+ok 3 - Example 3.6 second iteration matches the document
+  ---
+  duration_ms: 0.646456
+  type: 'test'
+  ...
+# Subtest: Textbook stopping criterion converges at iteration 22 for Example 3.6
+ok 4 - Textbook stopping criterion converges at iteration 22 for Example 3.6
+  ---
+  duration_ms: 0.582049
+  type: 'test'
+  ...
+# Subtest: Gauss-Seidel uses fresh values within the same iteration
+ok 5 - Gauss-Seidel uses fresh values within the same iteration
+  ---
+  duration_ms: 0.98049
+  type: 'test'
+  ...
+# Subtest: Blank/null coefficients are rejected instead of becoming zero
+ok 6 - Blank/null coefficients are rejected instead of becoming zero
+  ---
+  duration_ms: 0.66226
+  type: 'test'
+  ...
+# Subtest: Inconsistent systems are rejected
+ok 7 - Inconsistent systems are rejected
+  ---
+  duration_ms: 0.252982
+  type: 'test'
+  ...
+# Subtest: Systems without a unique solution are rejected
+ok 8 - Systems without a unique solution are rejected
+  ---
+  duration_ms: 0.273744
+  type: 'test'
+  ...
+# Subtest: Residual is computed from the actual A, x, b values
+ok 9 - Residual is computed from the actual A, x, b values
+  ---
+  duration_ms: 0.392142
+  type: 'test'
+  ...
+# Subtest: all six pages and shared assets exist
+ok 10 - all six pages and shared assets exist
+  ---
+  duration_ms: 1.26451
+  type: 'test'
+  ...
+# Subtest: each page links the shared calculation module before app.js
+ok 11 - each page links the shared calculation module before app.js
+  ---
+  duration_ms: 0.722651
+  type: 'test'
+  ...
+# Subtest: navigation targets are present
+ok 12 - navigation targets are present
+  ---
+  duration_ms: 2.048694
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 65.961864
