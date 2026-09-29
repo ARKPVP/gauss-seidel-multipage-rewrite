@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gauss–Seidel Calculator — ผลลัพธ์</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><div class="container"><h1>Gauss–Seidel Method</h1><p>ตารางผลการทำซ้ำ ค่าความคลาดเคลื่อน และ residual</p></div></header>
+<nav><div class="container nav-inner">
+  <a href="index.html">1. บทนำ</a><a href="input.html">2. กรอกสมการ</a><a href="settings.html">3. ตั้งค่า</a><a href="formulas.html">4. สูตรและที่มา</a><a href="steps.html">5. วิธีทำ</a><a href="results.html">6. ผลลัพธ์</a>
+</div></nav>
+<main class="container">
+  <div class="person-tag">ส่วนที่ 6 · ผลลัพธ์</div>
+  <section class="card">
+    <h2>ผลการคำนวณ</h2>
+    <div id="resultArea"></div>
+    <div id="tableArea"></div>
+    <div id="pager" class="pagination" hidden>
+      <label>แถวต่อหน้า<select id="pageSize"><option>25</option><option>50</option><option>100</option><option>250</option></select></label>
+      <span id="pageInfo" class="muted"></span>
+      <div class="pager-actions"><button id="prevPage" class="ghost" type="button">← ก่อนหน้า</button><button id="nextPage" class="ghost" type="button">ถัดไป →</button></div>
+    </div>
+    <div id="message"></div>
+    <div class="actions"><a class="btn ghost" href="steps.html">← ย้อนกลับ</a><div class="right"><a class="btn secondary" href="input.html">คำนวณโจทย์ใหม่</a></div></div>
+  </section>
+</main>
+<footer><div class="container">Residual ใช้ตรวจว่าคำตอบที่ได้ทำให้ Ax ใกล้ b แค่ไหน</div></footer>
+<script src="gauss-seidel.js"></script><script src="app.js"></script>
+<script>
+(() => {
+  const area = document.getElementById('resultArea');
+  const tableArea = document.getElementById('tableArea');
+  const pager = document.getElementById('pager');
+  const pageSizeEl = document.getElementById('pageSize');
+  const pageInfo = document.getElementById('pageInfo');
+  const message = document.getElementById('message');
+  let result, page = 1;
+
+  function renderTable() {
+    if (!result?.history) return;
+    const size = Number(pageSizeEl.value);
+    const pages = Math.max(1, Math.ceil(result.history.length / size));
+    page = Math.max(1, Math.min(page, pages));
+    const start = (page - 1) * size;
+    const rows = result.history.slice(start, start + size);
+    let head = '<tr><th>Iteration</th>' + Array.from({length: result.prepared.n}, (_, i) => `<th>x${i + 1}</th>`).join('') + '<th>Stopping error</th><th>Residual ||b−Ax||∞</th></tr>';
+    let body = rows.map(row => `<tr><td>${row.iteration}</td>${row.values.map(v => `<td>${fmt(v)}</td>`).join('')}<td>${fmt(row.error)}</td><td>${fmt(row.residual)}</td></tr>`).join('');
+    tableArea.innerHTML = `<div class="table-scroll"><table><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+    pageInfo.textContent = `หน้า ${page}/${pages} · แสดงรอบ ${rows.length ? rows[0].iteration : 0}-${rows.length ? rows[rows.length - 1].iteration : 0} จาก ${result.history.length}`;
+    document.getElementById('prevPage').disabled = page <= 1;
+    document.getElementById('nextPage').disabled = page >= pages;
+  }
+
+  try {
+    result = GS.gaussSeidel(getState());
+    const last = result.history[result.history.length - 1];
+    const ans = result.solution.map((v, i) => `${xVar(i + 1)} = ${fmt(v)}`).join(' , ');
+    const answerClass = result.converged ? 'final-answer' : 'final-answer warning-answer';
+    area.innerHTML = rowOrderMessage(result.prepared) + diagnosticHTML(result.prepared) + `
+      <div class="kpi-grid">
+        <div class="kpi"><div class="label">สถานะ</div><div class="value">${result.converged ? 'Converged' : 'Reached max iterations'}</div></div>
+        <div class="kpi"><div class="label">Iterations</div><div class="value">${result.history.length}</div></div>
+        <div class="kpi"><div class="label">Tolerance</div><div class="value">${fmt(result.prepared.tolerance)}</div></div>
+        <div class="kpi"><div class="label">Stopping criterion</div><div class="value small">${escapeHtml(criterionLabel(result.prepared.criterion))}</div></div>
+        <div class="kpi"><div class="label">Final stopping error</div><div class="value">${last ? fmt(last.error) : '—'}</div></div>
+        <div class="kpi"><div class="label">Final residual ||b−Ax||∞</div><div class="value">${last ? fmt(last.residual) : '—'}</div></div>
+      </div>
+      <div class="${answerClass}">${result.converged ? `ลู่เข้าตามเกณฑ์ที่เลือกภายใน ${result.history.length} รอบ` : 'ครบจำนวนรอบสูงสุดก่อนผ่านเกณฑ์'}<br><span class="math">${ans}</span></div>
+      ${result.prepared.criterion === 'textbook-last-relative' ? '<div class="message info">หมายเหตุ: โหมดตามเอกสารหยุดด้วย relative error ของตัวแปรสุดท้าย ส่วน residual แสดงเพื่อวินิจฉัยแยกต่างหาก จึงไม่ควรนำตัวเลขสองชนิดนี้มาเทียบกันตรง ๆ</div>' : ''}`;
+    pager.hidden = result.history.length === 0;
+    renderTable();
+  } catch (err) {
+    showMessage(message, err.message, 'danger');
+  }
+
+  pageSizeEl.addEventListener('change', () => { page = 1; renderTable(); });
+  document.getElementById('prevPage').addEventListener('click', () => { page--; renderTable(); });
+  document.getElementById('nextPage').addEventListener('click', () => { page++; renderTable(); });
+})();
+</script>
+</body></html>
