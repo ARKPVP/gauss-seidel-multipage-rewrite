@@ -3,6 +3,7 @@
 const GS = window.GaussSeidel;
 const STORAGE_KEY = 'gaussSeidelProjectV2';
 const LEGACY_KEY = 'gaussSeidelProject';
+const DISPLAY_MODE_KEY = 'gaussSeidelDisplayMode';
 
 function migrateState(s) {
   if (!s || typeof s !== 'object') return GS.cloneTextbookExample();
@@ -63,8 +64,41 @@ function escapeHtml(value) {
     .replaceAll("'", '&#039;');
 }
 
+function getDisplayMode() {
+  return localStorage.getItem(DISPLAY_MODE_KEY) === 'fixed-4' ? 'fixed-4' : 'precise';
+}
+
 function fmt(v, sig = 10) {
+  if (getDisplayMode() === 'fixed-4' && Number.isFinite(v)) {
+    return Number(v).toFixed(4);
+  }
   return GS.formatNumber(v, sig);
+}
+
+function addPrecisionToggle() {
+  const nav = document.querySelector('.nav-inner');
+  if (!nav || document.getElementById('precisionToggle')) return;
+
+  const button = document.createElement('button');
+  button.id = 'precisionToggle';
+  button.type = 'button';
+  button.className = 'precision-toggle';
+  button.title = 'เปลี่ยนเฉพาะรูปแบบการแสดงผล ไม่เปลี่ยนค่าที่ใช้คำนวณ';
+
+  const refreshLabel = () => {
+    const fixed = getDisplayMode() === 'fixed-4';
+    button.textContent = fixed ? 'ทศนิยม 4 ตำแหน่ง ✓' : 'ทศนิยม 4 ตำแหน่ง';
+    button.setAttribute('aria-pressed', String(fixed));
+  };
+
+  refreshLabel();
+  button.addEventListener('click', () => {
+    const next = getDisplayMode() === 'fixed-4' ? 'precise' : 'fixed-4';
+    localStorage.setItem(DISPLAY_MODE_KEY, next);
+    location.reload();
+  });
+
+  nav.appendChild(button);
 }
 
 function xVar(i, iteration = null) {
@@ -160,6 +194,7 @@ function setActiveNav() {
   document.querySelectorAll('nav a').forEach(a => {
     if (a.getAttribute('href') === page) a.classList.add('active');
   });
+  addPrecisionToggle();
 }
 
 document.addEventListener('DOMContentLoaded', setActiveNav);
