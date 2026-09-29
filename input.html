@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gauss–Seidel Calculator — กรอกสมการ</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><div class="container"><h1>Gauss–Seidel Method</h1><p>กรอกระบบสมการเชิงเส้นด้วยตัวเลขจริงของโจทย์</p></div></header>
+<nav><div class="container nav-inner">
+  <a href="index.html">1. บทนำ</a><a href="input.html">2. กรอกสมการ</a><a href="settings.html">3. ตั้งค่า</a><a href="formulas.html">4. สูตรและที่มา</a><a href="steps.html">5. วิธีทำ</a><a href="results.html">6. ผลลัพธ์</a>
+</div></nav>
+<main class="container">
+  <div class="person-tag">ส่วนที่ 2 · ข้อมูลเข้า</div>
+  <section class="card">
+    <h2>กรอกระบบสมการ A x = b</h2>
+    <div class="toolbar">
+      <label>จำนวนตัวแปร
+        <select id="sizeSelect"></select>
+      </label>
+      <button class="secondary" id="exampleBtn" type="button">โหลดตัวอย่าง 3.6 จากเอกสาร</button>
+      <button class="danger-btn" id="clearBtn" type="button">ล้างช่องกรอก</button>
+    </div>
+    <p class="hint">รับจำนวนเต็ม ทศนิยม และ scientific notation เช่น <code>1.25</code>, <code>-3</code>, <code>2e-4</code> — ช่องว่างจะไม่ถูกตีความเป็น 0</p>
+    <div id="message"></div>
+    <div id="matrixInput" class="matrix-wrap"></div>
+    <div class="actions"><a class="btn ghost" href="index.html">← ย้อนกลับ</a><div class="right"><button class="primary" id="saveNext" type="button">ตรวจสอบและไปต่อ →</button></div></div>
+  </section>
+</main>
+<footer><div class="container">ข้อมูลทุกค่ามาจากผู้ใช้หรือจากตัวอย่าง 3.6 ที่ระบุแหล่งที่มา</div></footer>
+<script src="gauss-seidel.js"></script><script src="app.js"></script>
+<script>
+(() => {
+  const sizeSelect = document.getElementById('sizeSelect');
+  const matrixInput = document.getElementById('matrixInput');
+  const message = document.getElementById('message');
+  let state = getState();
+
+  for (let n = GS.MIN_N; n <= GS.MAX_N; n++) {
+    const opt = document.createElement('option');
+    opt.value = n; opt.textContent = `${n} ตัวแปร`;
+    sizeSelect.appendChild(opt);
+  }
+  if (!Number.isInteger(state.n) || state.n < GS.MIN_N || state.n > GS.MAX_N) state = GS.createEmptyState(3);
+  sizeSelect.value = state.n;
+
+  function build(n) {
+    matrixInput.innerHTML = '';
+    for (let i = 0; i < n; i++) {
+      const row = document.createElement('div');
+      row.className = 'equation-row'; row.style.setProperty('--n', n);
+      for (let j = 0; j < n; j++) {
+        const box = document.createElement('div'); box.className = 'coef-box';
+        const inp = document.createElement('input');
+        inp.type = 'number'; inp.step = 'any'; inp.inputMode = 'decimal'; inp.id = `a-${i}-${j}`;
+        const value = state.A?.[i]?.[j]; inp.value = Number.isFinite(value) ? value : '';
+        inp.setAttribute('aria-label', `a${i + 1}${j + 1}`);
+        const span = document.createElement('span'); span.textContent = `x${j + 1}`;
+        box.append(inp, span); row.appendChild(box);
+      }
+      const eq = document.createElement('div'); eq.className = 'equal-sign'; eq.textContent = '=';
+      const rhs = document.createElement('input'); rhs.type = 'number'; rhs.step = 'any'; rhs.inputMode = 'decimal'; rhs.className = 'rhs-input'; rhs.id = `b-${i}`;
+      const bv = state.b?.[i]; rhs.value = Number.isFinite(bv) ? bv : ''; rhs.setAttribute('aria-label', `b${i + 1}`);
+      row.append(eq, rhs); matrixInput.appendChild(row);
+    }
+  }
+
+  function collect(allowBlank = false, forcedN = Number(sizeSelect.value)) {
+    const n = forcedN, A = [], b = [];
+    for (let i = 0; i < n; i++) {
+      A[i] = [];
+      for (let j = 0; j < n; j++) {
+        const el = document.getElementById(`a-${i}-${j}`);
+        A[i][j] = allowBlank && el.value.trim() === '' ? null : parseNumericInput(el, `a${i + 1}${j + 1}`);
+      }
+      const rhs = document.getElementById(`b-${i}`);
+      b[i] = allowBlank && rhs.value.trim() === '' ? null : parseNumericInput(rhs, `b${i + 1}`);
+    }
+    const oldX0 = Array.isArray(state.x0) ? state.x0 : [];
+    return {
+      ...state, n, A, b,
+      x0: Array.from({length:n}, (_, i) => Number.isFinite(oldX0[i]) ? oldX0[i] : 0),
+      source: 'user-input'
+    };
+  }
+
+  sizeSelect.addEventListener('change', () => {
+    const oldDraft = collect(true, state.n);
+    const n = Number(sizeSelect.value);
+    state = GS.createEmptyState(n);
+    state.tolerance = oldDraft.tolerance;
+    state.maxIterations = oldDraft.maxIterations;
+    state.criterion = oldDraft.criterion;
+    state.autoReorder = oldDraft.autoReorder;
+    for (let i = 0; i < Math.min(n, oldDraft.n); i++) {
+      for (let j = 0; j < Math.min(n, oldDraft.n); j++) state.A[i][j] = oldDraft.A[i][j];
+      state.b[i] = oldDraft.b[i];
+      state.x0[i] = oldDraft.x0[i];
+    }
+    saveState(state); build(n); message.innerHTML = '';
+  });
+
+  document.getElementById('exampleBtn').addEventListener('click', () => {
+    state = loadTextbookExample();
+    sizeSelect.value = state.n; build(state.n);
+    message.innerHTML = '<div class="message success"><strong>โหลดจากเอกสารแล้ว:</strong> ตัวอย่าง 3.6 ระบบ 4 สมการ ค่าเริ่มต้นเป็นศูนย์ และ ε = 0.0001</div>';
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    state = GS.createEmptyState(Number(sizeSelect.value));
+    saveState(state); build(state.n);
+    message.innerHTML = '<div class="message info">ล้างแล้ว — โปรแกรมจะไม่แทนช่องว่างด้วยเลข 0</div>';
+  });
+
+  document.getElementById('saveNext').addEventListener('click', () => {
+    try {
+      state = collect(false);
+      GS.validateShapeAndNumbers(state);
+      GS.prepareSystem(state); // ตรวจ unique solution และ diagonal ก่อนออกจากหน้า
+      saveState(state);
+      location.href = 'settings.html';
+    } catch (err) {
+      showMessage(message, err.message, 'danger');
+      message.scrollIntoView({behavior:'smooth', block:'center'});
+    }
+  });
+
+  build(state.n);
+  if (state.source?.includes('Example 3.6')) {
+    message.innerHTML = '<div class="message info">ชุดข้อมูลปัจจุบันคือ Example 3.6 จาก NUM-Chapter-04 (1).pdf</div>';
+  }
+})();
+</script>
+</body></html>
